@@ -113,5 +113,93 @@
     "workerpool",
     "Colorbar",
     "Colorbars"
-  ]
+  ],
+  // ==============================================
+  // GitHub Copilot 全自动开发配置（OHIF AI扩展专属）
+  // ==============================================
+  // 基础Agent模式核心配置（必须启用）
+  "github.copilot.chat.agent.enabled": true,
+  "github.copilot.chat.agent.autoFix": true,
+  "github.copilot.chat.agent.autopilot.enabled": true,
+
+  // 增加迭代上限，支持复杂医疗影像逻辑的深度开发
+  "github.copilot.chat.agent.maxIterations": 50,
+  "github.copilot.chat.agent.maxRequests": 200,
+  "github.copilot.chat.agent.maxToolCalls": 150,
+
+  // 启用多文件批量编辑能力
+  "github.copilot.edits.enabled": true,
+  "github.copilot.edits.maxFilesPerEdit": 20,
+
+  // 自定义代理与技能自动加载配置
+  "github.copilot.chat.agents.directories": [
+    ".github/agents"
+  ],
+  "github.copilot.chat.skills.directories": [
+    ".github/skills"
+  ],
+  "github.copilot.instructions.directories": [
+    ".github"
+  ],
+
+  // 设置默认代理为OHIF AI扩展开发专家
+  "github.copilot.chat.defaultAgent": "OHIF AI扩展开发专家",
+
+  // 全自动执行配置（安全模式）
+  "github.copilot.chat.tools.autoApprove": true,
+  "github.copilot.chat.tools.terminal.autoApprove": true,
+  "github.copilot.chat.tools.terminal.allowlist": [
+    "^bun (install|add|remove|run build|run test|run lint|run prettier)$",
+    "^yarn (install|add|remove|build|test:unit|lint|prettier)$",
+    "^yarn --cwd extensions/ai-inference (build|dev|test:unit|test:unit:ci)$",
+    "^lerna run (build|test:unit:ci) --scope @ohif/extension-ai-inference( --stream)?$",
+    "^npm (install|run build|run test|run lint)$",
+    "^pytest( -q)?$",
+    "^git (status|log|diff|add|commit -m \"AI: .*\")$",
+    "^ls( -[la]+)?$",
+    "^pwd$",
+    "^node .*\\.js$",
+    "^tsc --noEmit$"
+  ],
+  "github.copilot.chat.tools.terminal.denylist": [
+    "rm -rf",
+    "sudo",
+    "del /f /s",
+    "format",
+    "git reset --hard",
+    "git push --force",
+    "git checkout -- .",
+    "chmod 777",
+    "docker rm -f",
+    "kubectl delete"
+  ],
+
+  // OHIF项目专属开发配置
+  "github.copilot.codeStyle": "typescript",
+  "github.copilot.preferredLanguage": "typescript",
+
+  // 自动保存编辑后的文件，避免编译失败
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 500,
+
+  // 启用TypeScript严格模式检查
+  "typescript.strict": true,
+  "typescript.validate.enable": true,
+
+  // 模型与性能配置
+  "github.copilot.chat.model": "GPT-5 (copilot)",
+  "github.copilot.chat.contextWindowSize": 128000,
+  "github.copilot.chat.tools.codeSearch.enabled": true,
+
+  // 安全与隐私配置
+  "github.copilot.exclude": [
+    "**/.env*",
+    "**/*.pem",
+    "**/*.key",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "telemetry.telemetryLevel": "off",
+  "github.copilot.telemetry.enabled": false
 }
