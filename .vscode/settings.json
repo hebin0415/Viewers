@@ -132,15 +132,9 @@
   "github.copilot.edits.maxFilesPerEdit": 20,
 
   // 自定义代理与技能自动加载配置
-  "github.copilot.chat.agents.directories": [
-    ".github/agents"
-  ],
-  "github.copilot.chat.skills.directories": [
-    ".github/skills"
-  ],
-  "github.copilot.instructions.directories": [
-    ".github"
-  ],
+  "github.copilot.chat.agents.directories": [".github/agents"],
+  "github.copilot.chat.skills.directories": [".github/skills"],
+  "github.copilot.instructions.directories": [".github"],
 
   // 设置默认代理为OHIF AI扩展开发专家
   "github.copilot.chat.defaultAgent": "OHIF AI扩展开发专家",
