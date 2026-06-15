@@ -325,10 +325,10 @@ class StudyPrefetcherService extends PubSubService {
 
     return (
       displaySetsInstanceUIDs.length &&
-      displaySetsInstanceUIDs.every(
-        displaySetsInstanceUID =>
-          this._displaySetLoadingStates.get(displaySetsInstanceUID).loadingProgress >= 1
-      )
+      displaySetsInstanceUIDs.every(displaySetsInstanceUID => {
+        const loadingState = this._displaySetLoadingStates.get(displaySetsInstanceUID);
+        return !!loadingState && loadingState.loadingProgress >= 1;
+      })
     );
   }
 
@@ -497,6 +497,10 @@ class StudyPrefetcherService extends PubSubService {
 
     for (const displaySetInstanceUID of Array.from(displaySetsInstanceUIDs.values())) {
       const displaySetLoadingState = this._displaySetLoadingStates.get(displaySetInstanceUID);
+      if (!displaySetLoadingState) {
+        continue;
+      }
+
       const { pendingImageIds, loadedImageIds } = displaySetLoadingState;
 
       pendingImageIds.delete(imageId);
@@ -518,6 +522,10 @@ class StudyPrefetcherService extends PubSubService {
 
     for (const displaySetInstanceUID of Array.from(displaySetsInstanceUIDs.values())) {
       const displaySetLoadingState = this._displaySetLoadingStates.get(displaySetInstanceUID);
+      if (!displaySetLoadingState) {
+        continue;
+      }
+
       const { pendingImageIds, failedImageIds } = displaySetLoadingState;
 
       pendingImageIds.delete(imageId);
@@ -532,6 +540,10 @@ class StudyPrefetcherService extends PubSubService {
 
   private _triggerDisplaySetEvents(displaySetInstanceUID: string) {
     const displaySetLoadingState = this._displaySetLoadingStates.get(displaySetInstanceUID);
+    if (!displaySetLoadingState) {
+      return;
+    }
+
     const { loadingProgress, numInstances } = displaySetLoadingState;
 
     this._broadcastEvent(this.EVENTS.DISPLAYSET_LOAD_PROGRESS, {

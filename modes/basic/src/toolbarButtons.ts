@@ -84,6 +84,18 @@ const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'aiInferenceStatus',
+    uiType: 'ohif.aiInference.backendStatus',
+    props: {
+      icon: 'Status',
+      label: 'AI Inference',
+      tooltip: 'Show AI backend status and latest inference rendering state',
+      evaluate: {
+        name: 'evaluate.aiInference.backendStatus',
+      },
+    },
+  },
+  {
     id: 'dataOverlayMenu',
     uiType: 'ohif.dataOverlayMenu',
     props: {

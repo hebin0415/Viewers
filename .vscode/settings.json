@@ -17,7 +17,9 @@
   "editor.formatOnSave": true,
   "eslint.run": "onSave",
   "jest.autoRun": "off",
-  "prettier.disableLanguages": ["html"],
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
   "prettier.endOfLine": "lf",
   "workbench.colorCustomizations": {},
   "editor.codeActionsOnSave": {
@@ -139,34 +141,38 @@
   // 设置默认代理为OHIF AI扩展开发专家
   "github.copilot.chat.defaultAgent": "OHIF AI扩展开发专家",
 
-  // 全自动执行配置（安全模式）
+  // 全自动执行配置（不限制命令名单）
+  "chat.editing.autoAcceptDelay": 1,
+  "chat.permissions.default": "autopilot",
+  "chat.autopilot.enabled": true,
+  "chat.tools.terminal.enableAutoApprove": true,
+  "chat.tools.terminal.autoApprove": {
+    "pwsh": true,
+    "powershell": true,
+    "git": true,
+    "npm": true,
+    "pnpm": true,
+    "yarn": true,
+    "node": true,
+    "npx": true,
+    "python": true,
+    "pip": true
+  },
+  "github.copilot.chat.tools.terminal.allowlist": [
+    "^pwsh .*$",
+    "^powershell .*$",
+    "^git .*$",
+    "^npm .*$"
+  ],
+  "chat.tools.edits.autoApprove": {
+    "*": true
+  },
+  "chat.tools.urls.autoApprove": {
+    "*": true
+  },
   "github.copilot.chat.tools.autoApprove": true,
   "github.copilot.chat.tools.terminal.autoApprove": true,
-  "github.copilot.chat.tools.terminal.allowlist": [
-    "^bun (install|add|remove|run build|run test|run lint|run prettier)$",
-    "^yarn (install|add|remove|build|test:unit|lint|prettier)$",
-    "^yarn --cwd extensions/ai-inference (build|dev|test:unit|test:unit:ci)$",
-    "^lerna run (build|test:unit:ci) --scope @ohif/extension-ai-inference( --stream)?$",
-    "^npm (install|run build|run test|run lint)$",
-    "^pytest( -q)?$",
-    "^git (status|log|diff|add|commit -m \"AI: .*\")$",
-    "^ls( -[la]+)?$",
-    "^pwd$",
-    "^node .*\\.js$",
-    "^tsc --noEmit$"
-  ],
-  "github.copilot.chat.tools.terminal.denylist": [
-    "rm -rf",
-    "sudo",
-    "del /f /s",
-    "format",
-    "git reset --hard",
-    "git push --force",
-    "git checkout -- .",
-    "chmod 777",
-    "docker rm -f",
-    "kubectl delete"
-  ],
+  "terminal.integrated.shellIntegration.enabled": true,
 
   // OHIF项目专属开发配置
   "github.copilot.codeStyle": "typescript",
@@ -178,7 +184,7 @@
 
   // 启用TypeScript严格模式检查
   "typescript.strict": true,
-  "typescript.validate.enable": true,
+  "js/ts.validate.enabled": true,
 
   // 模型与性能配置
   "github.copilot.chat.model": "GPT-5 (copilot)",

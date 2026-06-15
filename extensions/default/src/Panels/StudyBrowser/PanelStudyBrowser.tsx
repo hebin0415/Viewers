@@ -484,7 +484,7 @@ function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcM
 
       array.push({
         displaySetInstanceUID,
-        description: ds.SeriesDescription || '',
+        description: _getDisplaySetDescription(ds),
         seriesNumber: ds.SeriesNumber,
         modality: ds.Modality,
         seriesDate: formatDate(ds.SeriesDate),
@@ -505,6 +505,66 @@ function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcM
     });
 
   return [...thumbnailDisplaySets, ...thumbnailNoImageDisplaySets];
+}
+
+function _getDisplaySetDescription(ds) {
+  const primaryDescription =
+    ds.SeriesDescription ||
+    ds.label ||
+    ds.displaySetLabel ||
+    ds.instance?.SeriesDescription ||
+    ds.instances?.[ds.instances.length - 1]?.SeriesDescription ||
+    '';
+
+  const normalizedPrimary = String(primaryDescription || '').trim();
+  const genericModalities = new Set(['RTSTRUCT', 'SEG', 'SR']);
+
+  if (normalizedPrimary && !genericModalities.has(normalizedPrimary.toUpperCase())) {
+    return _normalizeAiDisplaySetDescription(normalizedPrimary);
+  }
+
+  if (ds.Modality === 'RTSTRUCT') {
+    return _normalizeAiDisplaySetDescription(
+      ds.instance?.StructureSetLabel ||
+        ds.instances?.[ds.instances.length - 1]?.StructureSetLabel ||
+        normalizedPrimary ||
+        'AI RTSTRUCT'
+    );
+  }
+
+  if (ds.Modality === 'SEG') {
+    return _normalizeAiDisplaySetDescription(
+      ds.label ||
+        ds.instance?.SegmentLabel ||
+        ds.instances?.[ds.instances.length - 1]?.SegmentLabel ||
+        normalizedPrimary ||
+        'AI SEG'
+    );
+  }
+
+  if (ds.Modality === 'SR') {
+    return _normalizeAiDisplaySetDescription(normalizedPrimary || ds.label || 'AI SR');
+  }
+
+  return _normalizeAiDisplaySetDescription(normalizedPrimary || ds.label || ds.Modality || '');
+}
+
+function _normalizeAiDisplaySetDescription(description) {
+  const normalizedDescription = String(description || '').trim();
+
+  if (!normalizedDescription) {
+    return '';
+  }
+
+  if (/^AI\s*\|/i.test(normalizedDescription)) {
+    return normalizedDescription;
+  }
+
+  if (/\b\d{8}-\d{6}\b/.test(normalizedDescription)) {
+    return `AI | ${normalizedDescription}`;
+  }
+
+  return normalizedDescription;
 }
 
 function _getComponentType(ds) {

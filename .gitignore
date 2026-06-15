@@ -73,3 +73,6 @@ libs/
 link-cs3d.js
 unlink-cs3d.js
 auth.json
+
+# AI inference model assets
+backend/ai-inference-service/models/

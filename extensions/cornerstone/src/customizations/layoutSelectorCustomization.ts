@@ -4,6 +4,8 @@ export default {
   }: {
     servicesManager: AppTypes.ServicesManager;
   }) => {
+    const isDefined = <T>(value: T | null | undefined): value is T => value != null;
+
     const _areSelectorsValid = (
       hp: AppTypes.HangingProtocol.Protocol,
       displaySets: AppTypes.DisplaySet[],
@@ -40,14 +42,25 @@ export default {
         return [];
       }
 
-      const displaySets = displaySetInstanceUIDs.map(uid => {
-        const displaySet = displaySetService.getDisplaySetByUID(uid);
-        const referencedDisplaySetUID = displaySet?.measurements?.[0]?.displaySetInstanceUID;
-        if (displaySet.Modality === 'SR' && referencedDisplaySetUID) {
-          return displaySetService.getDisplaySetByUID(referencedDisplaySetUID);
-        }
-        return displaySet;
-      });
+      const displaySets = displaySetInstanceUIDs
+        .map(uid => {
+          const displaySet = displaySetService.getDisplaySetByUID(uid);
+          if (!displaySet) {
+            return undefined;
+          }
+
+          const referencedDisplaySetUID = displaySet?.measurements?.[0]?.displaySetInstanceUID;
+          if (displaySet.Modality === 'SR' && referencedDisplaySetUID) {
+            return displaySetService.getDisplaySetByUID(referencedDisplaySetUID);
+          }
+
+          return displaySet;
+        })
+        .filter(isDefined);
+
+      if (!displaySets.length) {
+        return [];
+      }
 
       return hangingProtocols
         .map(hp => {

@@ -53,6 +53,9 @@
       "version": "3.0.0"
     },
     {
+      "packageName": "@ohif/extension-ai-inference"
+    },
+    {
       "packageName": "@ohif/extension-test",
       "default": false,
       "version": "3.0.0"

@@ -1,15 +1,11 @@
 ---
-
-## 2. .github/agents/ohif-ai-extension-developer.agent.md
-```markdown
----
 name: "OHIF AI扩展开发专家"
 description: "开发 OHIF Viewer AI inference 扩展与配套后台服务。Use when implementing nnU-Net, YOLO, MONAI, DICOMweb, FastAPI, Cornerstone3D, segmentation, detection, MPR overlays, CT intervention workflows, extension packaging, compile/test automation, or refactoring extensions/ai-inference."
 tools: [read, search, edit, execute]
 model: "GPT-5 (copilot)"
 user-invocable: true
 disable-model-invocation: false
-agents: []
+agents: ["OHIF开发人员", "AI后端开发人员", "架构师", "产品工程师"]
 argument-hint: "目标模型、前后端范围、OHIF 扩展范围、验收标准"
 ---
 

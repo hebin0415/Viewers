@@ -1,0 +1,111 @@
+{
+  "backend": {
+    "listenAddress": "127.0.0.1",
+    "port": 8000,
+    "runtimeHost": "127.0.0.1",
+    "runtimePorts": {
+      "nnunet": 8101,
+      "yolo": 8102,
+      "monai": 8103
+    },
+    "venvPath": ".venv",
+    "artifactsDir": "../artifacts"
+  },
+  "dicomweb": {
+    "retrieveBaseUrl": "http://127.0.0.1:8042/dicom-web",
+    "stowUrl": "http://127.0.0.1:8042/dicom-web/studies",
+    "headers": {}
+  },
+  "runtimes": {
+    "nnunet": {
+      "image": "ohif-ai-nnunet-runtime:3.13.0-beta.87",
+      "modelDir": "../models/nnunet",
+      "containerModelDir": "/models/nnunet",
+      "entryPoint": "",
+      "device": "cpu",
+      "extraDockerArgs": [],
+      "containerArgs": [
+        "python",
+        "/opt/ohif-runtime/nnunet/infer.py",
+        "--request",
+        "/runtime/work/request.json",
+        "--response",
+        "/runtime/work/response.json",
+        "--model-dir",
+        "/models/nnunet"
+      ],
+      "internalCommand": [
+        "python",
+        "/opt/ohif-ai/nnunet/infer-engine.py",
+        "--request",
+        "{request_json}",
+        "--response",
+        "{response_json}",
+        "--model-dir",
+        "{model_dir}",
+        "--device",
+        "{device}"
+      ]
+    },
+    "yolo": {
+      "image": "ohif-ai-yolo-runtime:3.13.0-beta.87",
+      "modelDir": "../models/yolo",
+      "containerModelDir": "/models/yolo",
+      "entryPoint": "",
+      "device": "cpu",
+      "extraDockerArgs": ["--shm-size", "1g"],
+      "containerArgs": [
+        "python",
+        "/opt/ohif-runtime/yolo/infer.py",
+        "--request",
+        "/runtime/work/request.json",
+        "--response",
+        "/runtime/work/response.json",
+        "--model-dir",
+        "/models/yolo"
+      ],
+      "internalCommand": [
+        "python",
+        "/opt/ohif-ai/yolo/infer-engine.py",
+        "--request",
+        "{request_json}",
+        "--response",
+        "{response_json}",
+        "--model-dir",
+        "{model_dir}",
+        "--device",
+        "{device}"
+      ]
+    },
+    "monai": {
+      "image": "ohif-ai-monai-runtime:3.13.0-beta.87",
+      "modelDir": "../models/monai",
+      "containerModelDir": "/models/monai",
+      "entryPoint": "",
+      "device": "cpu",
+      "extraDockerArgs": [],
+      "containerArgs": [
+        "python",
+        "/opt/ohif-runtime/monai/infer.py",
+        "--request",
+        "/runtime/work/request.json",
+        "--response",
+        "/runtime/work/response.json",
+        "--model-dir",
+        "/models/monai"
+      ],
+      "internalCommand": [
+        "python",
+        "/opt/ohif-ai/monai/infer-engine.py",
+        "--request",
+        "{request_json}",
+        "--response",
+        "{response_json}",
+        "--model-dir",
+        "{model_dir}",
+        "--device",
+        "{device}"
+      ]
+    }
+  }
+}

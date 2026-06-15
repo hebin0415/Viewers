@@ -72,6 +72,12 @@ export default function ModeRoute({
   const runTimeHangingProtocolId = lowerCaseSearchParams.get('hangingprotocolid');
   const runTimeStageId = lowerCaseSearchParams.get('stageid');
   const token = lowerCaseSearchParams.get('token');
+  const hasStudyQuery =
+    !!lowerCaseSearchParams.get('studyinstanceuids') ||
+    !!lowerCaseSearchParams.get('studyinstanceuid');
+  const hasSeriesQuery =
+    !!lowerCaseSearchParams.get('seriesinstanceuids') ||
+    !!lowerCaseSearchParams.get('seriesinstanceuid');
 
   if (token) {
     updateAuthServiceAndCleanUrl(token, location, userAuthenticationService);
@@ -132,6 +138,31 @@ export default function ModeRoute({
       layoutTemplateData.current = null;
     };
   }, [location, ExtensionDependenciesLoaded]);
+
+  useEffect(() => {
+    if (!ExtensionDependenciesLoaded) {
+      return;
+    }
+
+    if (mode?.routeName !== 'viewer' || hasStudyQuery || hasSeriesQuery) {
+      return;
+    }
+
+    navigate(
+      {
+        pathname: '/',
+        search: location.search,
+      },
+      { replace: true }
+    );
+  }, [
+    ExtensionDependenciesLoaded,
+    mode?.routeName,
+    hasStudyQuery,
+    hasSeriesQuery,
+    navigate,
+    location.search,
+  ]);
 
   /**
    * Validates study existence before loading the viewer.

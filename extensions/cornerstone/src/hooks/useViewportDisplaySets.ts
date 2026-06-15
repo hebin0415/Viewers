@@ -14,6 +14,10 @@ const sortByPriority = (a, b) => {
   return -1;
 };
 
+const isDisplaySetDefined = <TDisplaySet>(
+  displaySet: TDisplaySet | null | undefined
+): displaySet is TDisplaySet => !!displaySet;
+
 /**
  * Options for the useViewportDisplaySets hook
  */
@@ -116,7 +120,10 @@ export function useViewportDisplaySets(
   // Get all available display sets (only if needed)
   const needsAllDisplaySets = includePotentialBackground;
   const allDisplaySets = useMemo(
-    () => (needsAllDisplaySets ? displaySetService.getActiveDisplaySets() : []),
+    () =>
+      needsAllDisplaySets
+        ? displaySetService.getActiveDisplaySets().filter(isDisplaySetDefined)
+        : [],
     [displaySetService, needsAllDisplaySets]
   );
 
@@ -154,10 +161,9 @@ export function useViewportDisplaySets(
     if (!includeOverlay) {
       return [];
     }
-    return segmentationRepresentations.map(repr => {
-      const displaySet = displaySetService.getDisplaySetByUID(repr.segmentationId);
-      return displaySet;
-    });
+    return segmentationRepresentations
+      .map(repr => displaySetService.getDisplaySetByUID(repr.segmentationId))
+      .filter(isDisplaySetDefined);
   }, [includeOverlay, segmentationRepresentations, displaySetService]);
 
   const overlayDisplaySetUIDs = useMemo(() => {
@@ -172,12 +178,19 @@ export function useViewportDisplaySets(
     if (!needsEnhancedDisplaySets) {
       return { viewportDisplaySets: [], enhancedDisplaySets: [] };
     }
-    return (
-      getEnhancedDisplaySets({
-        viewportId: viewportIdToUse,
-        services: { displaySetService, viewportGridService },
-      }) || { viewportDisplaySets: [], enhancedDisplaySets: [] }
-    );
+    const enhancedDisplaySetResult = getEnhancedDisplaySets({
+      viewportId: viewportIdToUse,
+      services: { displaySetService, viewportGridService },
+    }) || { viewportDisplaySets: [], enhancedDisplaySets: [] };
+
+    return {
+      viewportDisplaySets: (enhancedDisplaySetResult.viewportDisplaySets ?? []).filter(
+        isDisplaySetDefined
+      ),
+      enhancedDisplaySets: (enhancedDisplaySetResult.enhancedDisplaySets ?? []).filter(
+        isDisplaySetDefined
+      ),
+    };
   }, [viewportIdToUse, displaySetService, viewportGridService, needsEnhancedDisplaySets]);
 
   const backgroundDisplaySet = useMemo(

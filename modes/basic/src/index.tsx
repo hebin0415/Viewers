@@ -36,6 +36,10 @@ export const cornerstone = {
   viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
 
+export const aiInference = {
+  panel: '@ohif/extension-ai-inference.panelModule.ai-inference-panel',
+};
+
 export const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
   sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
@@ -79,6 +83,7 @@ export const segmentation = {
 export const extensionDependencies = {
   // Can derive the versions at least process.env.from npm_package_version
   '@ohif/extension-default': '^3.0.0',
+  '@ohif/extension-ai-inference': '^3.0.0',
   '@ohif/extension-cornerstone': '^3.0.0',
   '@ohif/extension-cornerstone-dicom-sr': '^3.0.0',
   '@ohif/extension-cornerstone-dicom-seg': '^3.0.0',
@@ -239,6 +244,7 @@ export const toolbarSections = {
   ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topRight]: [
+    'aiInferenceStatus',
     'modalityLoadBadge',
     'trackingStatus',
     'navigationComponent',
@@ -286,7 +292,7 @@ export const basicLayout = {
   props: {
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
-    rightPanels: [cornerstone.segmentation, cornerstone.measurements],
+    rightPanels: [aiInference.panel, cornerstone.segmentation, cornerstone.measurements],
     rightPanelClosed: true,
     rightPanelResizable: true,
     viewports: [

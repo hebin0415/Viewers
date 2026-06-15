@@ -180,6 +180,12 @@ module.exports = (env, argv) => {
       historyApiFallback: {
         disableDotRule: true,
         index: PUBLIC_URL + 'index.html',
+        rewrites: [
+          {
+            from: /^\/viewer(?:\/.*)?$/,
+            to: `${PUBLIC_URL}index.html`,
+          },
+        ],
       },
       devMiddleware: {
         writeToDisk: true,

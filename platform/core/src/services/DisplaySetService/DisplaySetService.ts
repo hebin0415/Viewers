@@ -200,8 +200,19 @@ export default class DisplaySetService extends PubSubService {
       ds => ds.displaySetInstanceUID === displaySetInstanceUID
     );
 
+    const hasCachedDisplaySet = displaySetCache.has(displaySetInstanceUID);
+    const hasActiveDisplaySet = activeDisplaySetsIndex >= 0;
+
+    if (!hasCachedDisplaySet && !hasActiveDisplaySet) {
+      return;
+    }
+
     displaySetCache.delete(displaySetInstanceUID);
-    activeDisplaySets.splice(activeDisplaySetsIndex, 1);
+
+    if (hasActiveDisplaySet) {
+      activeDisplaySets.splice(activeDisplaySetsIndex, 1);
+    }
+
     activeDisplaySetsMap.delete(displaySetInstanceUID);
 
     this._broadcastEvent(EVENTS.DISPLAY_SETS_CHANGED, this.activeDisplaySets);
