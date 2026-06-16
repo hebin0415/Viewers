@@ -5,13 +5,15 @@ import json
 import os
 import shlex
 import subprocess
-import tempfile
 from pathlib import Path
 import re
+from uuid import uuid4
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+from app.core.settings import settings
 
 
 class RuntimeRequest(BaseModel):
@@ -100,6 +102,15 @@ def _materialize_runtime_output_paths(payload: dict, work_dir: str) -> dict:
     return payload
 
 
+def _create_runtime_work_dir(family: str) -> Path:
+    base_dir = Path(settings.artifacts_dir).expanduser().resolve() / 'runtime-work'
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    work_dir = base_dir / f'ai-{family}-runtime-{uuid4().hex}'
+    work_dir.mkdir()
+    return work_dir
+
+
 def _run_runtime_command(family: str, request: RuntimeRequest) -> dict:
     runtime_command = os.environ.get(_runtime_command_env_name(family), '').strip()
     if not runtime_command:
@@ -108,7 +119,7 @@ def _run_runtime_command(family: str, request: RuntimeRequest) -> dict:
             f'or override AI_INFERENCE_{family.upper()}_MANAGED_COMMAND with a dedicated service startup command.'
         )
 
-    work_dir = Path(tempfile.mkdtemp(prefix=f'ai-{family}-runtime-')).resolve()
+    work_dir = _create_runtime_work_dir(family)
     request_path = work_dir / 'request.json'
     response_path = work_dir / 'response.json'
     request_payload = request.model_dump(mode='json')

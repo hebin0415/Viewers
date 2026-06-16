@@ -1,0 +1,1 @@
+{"summary": "TotalSegmentator generated a DICOM RT Struct using total_fast.", "dicomFiles": ["/runtime/work/dicom-artifacts/segmentations.dcm"], "metadata": {"framework": "TotalSegmentator", "weightsTask": "total_fast", "roiSubset": null, "device": "cpu"}}
