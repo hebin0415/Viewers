@@ -164,9 +164,11 @@ function _load(
         rtDisplaySet.structureSet = structureSet;
       }
 
-      if (createSegmentation) {
+      if (createSegmentation && _hasRenderableROIContours(rtDisplaySet)) {
         await segmentationService.createSegmentationForRTDisplaySet(rtDisplaySet);
       }
+
+      rtDisplaySet.isLoaded = true;
 
       resolve();
     } catch (error) {
@@ -177,6 +179,10 @@ function _load(
   });
 
   return loadPromises[SOPInstanceUID];
+}
+
+function _hasRenderableROIContours(rtDisplaySet) {
+  return !!rtDisplaySet?.structureSet?.ROIContours?.length;
 }
 
 function _deriveReferencedSeriesSequenceFromFrameOfReferenceSequence(

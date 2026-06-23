@@ -30,7 +30,7 @@ def _adapt_yolo_output(raw_output: dict, _request: dict, _context: dict[str, str
 
     return {
         'status': 'completed',
-        'resultFormat': raw_output.get('resultFormat', 'dicom-sr'),
+        'resultFormat': raw_output.get('resultFormat', 'rtstruct'),
         'payload': {
             'summary': raw_output.get('summary', 'YOLO wrapper completed detection'),
             'artifactUri': raw_output.get('artifactUri'),

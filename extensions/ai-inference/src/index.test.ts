@@ -1,6 +1,13 @@
-import extension from './index';
 import { id } from './id';
 import { ModelFactory } from './core/factories/ModelFactory';
+
+jest.mock('./getCustomizationModule', () => jest.fn());
+jest.mock('./getCommandsModule', () => jest.fn());
+jest.mock('./getPanelModule', () => jest.fn());
+jest.mock('./getToolbarModule', () => jest.fn());
+jest.mock('./registerIcons', () => jest.fn());
+
+import extension from './index';
 
 describe('ai-inference extension scaffold', () => {
   test('exports the expected extension id', () => {

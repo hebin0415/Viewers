@@ -106,6 +106,7 @@ if ($selectedFamilies -contains 'nnunet') {
 if ($selectedFamilies -contains 'yolo') {
     $yoloModelPath = Join-Path $projectRoot 'models\yolo\yolo26n.pt'
     $yoloModelDir = Split-Path -Parent $yoloModelPath
+    $totalsegMarker = Join-Path $totalsegHome '.weights-ready-total_fast'
 
     if ($dockerAvailable) {
         Invoke-DockerModelCommand `
@@ -116,11 +117,14 @@ if ($selectedFamilies -contains 'yolo') {
                 '-c',
                 "from pathlib import Path; from ultralytics.utils.downloads import attempt_download_asset; target = Path('/models/yolo26n.pt'); target.parent.mkdir(parents=True, exist_ok=True); attempt_download_asset(target)"
             )
+        New-Item -ItemType Directory -Force -Path $totalsegHome | Out-Null
+        Set-Content -Path $totalsegMarker -Value 'ready' -Encoding utf8
     }
     else {
         New-Item -ItemType Directory -Force -Path $yoloModelDir | Out-Null
         Install-Packages -Packages @('ultralytics==8.4.62', 'torch==2.5.1+cpu', 'torchvision==0.20.1+cpu') -ExtraIndexUrl $PyTorchCpuIndexUrl
         & $pythonExe -c "import sys; from pathlib import Path; from ultralytics.utils.downloads import attempt_download_asset; target = Path(sys.argv[1]); target.parent.mkdir(parents=True, exist_ok=True); attempt_download_asset(target)" $yoloModelPath
+        Set-Content -Path $totalsegMarker -Value 'ready' -Encoding utf8
     }
 }
 

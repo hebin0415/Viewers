@@ -11,7 +11,7 @@ import pydicom
 
 from app.core.settings import settings
 from app.schemas.api import InferencePayload, InferenceRequest
-from app.services.derived_dicom import create_seg_dataset, create_sr_dataset
+from app.services.derived_dicom import create_rtstruct_dataset, create_seg_dataset, create_sr_dataset
 
 
 @dataclass(frozen=True)
@@ -108,7 +108,15 @@ def _stow_instances(paths: list[Path]) -> None:
         headers=headers,
         timeout=settings.dicomweb_timeout_seconds,
     )
-    response.raise_for_status()
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        detail = response.text.strip()
+        message = f'Failed to STOW {len(paths)} DICOM instance(s) to {settings.dicomweb_stow_url}'
+        if detail:
+            message = f'{message}: {detail}'
+        raise RuntimeError(message) from error
 
 
 def _collect_generated_paths(
@@ -133,6 +141,16 @@ def _collect_generated_paths(
     if payload.visualizations and payload.visualizations.segmentation:
         return [
             create_seg_dataset(
+                inference_id=inference_id,
+                request=request,
+                payload=payload,
+                destination_dir=destination_dir,
+            )
+        ]
+
+    if request.taskType == 'detection':
+        return [
+            create_rtstruct_dataset(
                 inference_id=inference_id,
                 request=request,
                 payload=payload,

@@ -1,0 +1,11 @@
+{
+    "device": "$torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')",
+    "checkpointloader": {
+        "_target_": "CheckpointLoader",
+        "load_path": "model.pt",
+        "load_dict": {
+            "model": "@network"
+        },
+        "map_location": "@device"
+    }
+}

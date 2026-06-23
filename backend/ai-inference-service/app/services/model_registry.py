@@ -15,30 +15,22 @@ class ModelRegistryEntry:
     runner: object
 
 
+def _build_entry(runner: object) -> ModelRegistryEntry:
+    return ModelRegistryEntry(
+        name=runner.name,
+        family=runner.family,
+        version=runner.version,
+        task_types=list(runner.task_types),
+        runner=runner,
+    )
+
+
 # Each family is isolated behind its own runner so the HTTP contract stays stable
 # while execution moves to real nnU-Net, YOLO, or MONAI runtimes per deployment.
 _entries: dict[str, ModelRegistryEntry] = {
-    "nnunet": ModelRegistryEntry(
-        name="nnunet",
-        family="nnunet",
-        version="0.1.0",
-        task_types=["segmentation"],
-        runner=NnUNetService(),
-    ),
-    "yolo": ModelRegistryEntry(
-        name="yolo",
-        family="yolo",
-        version="0.1.0",
-        task_types=["detection"],
-        runner=YoloService(),
-    ),
-    "monai": ModelRegistryEntry(
-        name="monai",
-        family="monai",
-        version="0.1.0",
-        task_types=["segmentation"],
-        runner=MonaiService(),
-    ),
+    'nnunet': _build_entry(NnUNetService()),
+    'yolo': _build_entry(YoloService()),
+    'monai': _build_entry(MonaiService()),
 }
 
 

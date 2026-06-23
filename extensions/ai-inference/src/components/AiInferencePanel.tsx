@@ -93,7 +93,7 @@ const tableStyle: React.CSSProperties = {
 };
 
 const headerCellStyle: React.CSSProperties = {
-  textAlign: 'left',
+  textAlign: 'center',
   padding: '0.44rem 0.48rem',
   fontSize: '0.75rem',
   color: '#cbd5e1',
@@ -113,6 +113,7 @@ const bodyCellStyle: React.CSSProperties = {
   verticalAlign: 'middle',
   whiteSpace: 'nowrap',
   fontSize: '0.76rem',
+  textAlign: 'center',
 };
 
 const numericCellStyle: React.CSSProperties = {
@@ -168,7 +169,7 @@ const formatCompactTime = (value?: string | null) => {
 
 const formatDuration = (task: WorkflowTask) => {
   const startValue = task.startedAt ?? task.submittedAt;
-  const endValue = task.completedAt ?? new Date().toISOString();
+  const endValue = task.completedAt ?? (isTaskActive(task) ? new Date().toISOString() : startValue);
   const startMs = new Date(startValue).getTime();
   const endMs = new Date(endValue).getTime();
 
@@ -637,9 +638,9 @@ export function AiInferencePanel({
             <thead>
               <tr>
                 <th style={headerCellStyle}>Series</th>
+                <th style={headerCellStyle}>Duration</th>
                 <th style={headerCellStyle}>Model</th>
                 <th style={headerCellStyle}>Status</th>
-                <th style={headerCellStyle}>Duration</th>
                 <th style={headerCellStyle}>Submitted</th>
               </tr>
             </thead>
@@ -649,9 +650,19 @@ export function AiInferencePanel({
                   <tr key={`${task.inferenceId}-${task.jobId}`}>
                     <td
                       style={bodyCellStyle}
-                      title={task.seriesLabel}
+                      title={formatSeriesNumber(task.seriesNumber)}
                     >
-                      {task.seriesLabel || formatSeriesNumber(task.seriesNumber)}
+                      {formatSeriesNumber(task.seriesNumber)}
+                    </td>
+                    <td
+                      style={{
+                        ...bodyCellStyle,
+                        ...numericCellStyle,
+                        color: '#cbd5e1',
+                      }}
+                      title={formatDuration(task)}
+                    >
+                      {formatDuration(task)}
                     </td>
                     <td style={bodyCellStyle}>{task.modelName}</td>
                     <td
@@ -663,17 +674,6 @@ export function AiInferencePanel({
                       }}
                     >
                       {getTaskStatusLabel(task.status)}
-                    </td>
-                    <td
-                      style={{
-                        ...bodyCellStyle,
-                        ...numericCellStyle,
-                        color: '#cbd5e1',
-                        textAlign: 'right',
-                      }}
-                      title={formatDuration(task)}
-                    >
-                      {formatDuration(task)}
                     </td>
                     <td style={{ ...bodyCellStyle, ...alignedCompactCellStyle }}>
                       {formatCompactTime(task.submittedAt)}

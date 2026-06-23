@@ -1,0 +1,1 @@
+{"jobId": "5835a047-3839-423e-a771-b1a559839189", "inferenceId": "f91eb687-3147-4a8e-b01b-b8a1889f1046", "modelName": "nnunet", "taskType": "segmentation", "studyInstanceUID": "1.2.3", "seriesInstanceUID": "4.5.6", "options": {"async": false, "returnContours": false, "confidenceThreshold": 0.25}}

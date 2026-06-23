@@ -47,6 +47,7 @@ type ResultActionOptions = {
 };
 
 type StoredSeriesMetadata = {
+  SeriesDescription?: string;
   instances?: Array<Record<string, unknown>>;
 };
 
@@ -104,6 +105,25 @@ const getDisplaySetSeriesInstanceUID = (
       }
     | undefined
 ) => displaySet?.SeriesInstanceUID ?? displaySet?.instances?.[0]?.SeriesInstanceUID ?? null;
+
+const getSeriesMetadataLabel = (
+  studyInstanceUID?: string | null,
+  seriesInstanceUID?: string | null
+) => {
+  if (!studyInstanceUID || !seriesInstanceUID) {
+    return '';
+  }
+
+  const seriesMetadata = DicomMetadataStore.getSeries(studyInstanceUID, seriesInstanceUID) as
+    | StoredSeriesMetadata
+    | undefined;
+
+  return (
+    seriesMetadata?.SeriesDescription ??
+    (seriesMetadata?.instances?.[0]?.SeriesDescription as string | undefined) ??
+    ''
+  );
+};
 
 const isDisplaySetForAiModel = (
   displaySet:
@@ -282,8 +302,9 @@ const getCommandsModule = ({
         resolvedDisplaySet?.instances?.[0]?.SeriesInstanceUID;
       const seriesNumber =
         resolvedDisplaySet?.SeriesNumber ?? resolvedDisplaySet?.instances?.[0]?.SeriesNumber;
+      const metadataSeriesLabel = getSeriesMetadataLabel(studyInstanceUID, seriesInstanceUID);
       const seriesLabel =
-        resolvedDisplaySet?.SeriesDescription ??
+        (metadataSeriesLabel || resolvedDisplaySet?.SeriesDescription) ??
         resolvedDisplaySet?.displaySetLabel ??
         resolvedDisplaySet?.instances?.[0]?.SeriesDescription ??
         seriesInstanceUID ??
@@ -1492,7 +1513,10 @@ const getCommandsModule = ({
             taskType: job.taskType,
             seriesLabel,
             status: job.status,
-            startedAt: job.status === 'running' ? (job.updatedAt ?? getIsoNow()) : undefined,
+            startedAt:
+              job.status === 'running'
+                ? (getTaskByInferenceId(inferenceId)?.startedAt ?? job.updatedAt ?? getIsoNow())
+                : undefined,
             completedAt:
               job.status === 'completed' || job.status === 'failed' ? job.updatedAt : null,
             error: job.error ?? null,

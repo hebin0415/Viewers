@@ -77,6 +77,19 @@ def _extract_json_payload(stdout: str) -> dict:
     raise RuntimeError('Managed runtime command stdout did not contain a JSON object payload')
 
 
+def _decode_subprocess_output(output: bytes | str | None) -> str:
+    if output is None:
+        return ''
+
+    if isinstance(output, str):
+        return output
+
+    try:
+        return output.decode('utf-8')
+    except UnicodeDecodeError:
+        return output.decode('utf-8', errors='replace')
+
+
 def _resolve_runtime_work_path(path_value: str, work_dir: str) -> str:
     normalized = path_value.replace('\\', '/').strip()
     lowered = normalized.lower()
@@ -142,22 +155,24 @@ def _run_runtime_command(family: str, request: RuntimeRequest) -> dict:
 
     completed = subprocess.run(
         _resolve_command(runtime_command, context),
-        input=json.dumps(request_payload),
+        input=json.dumps(request_payload).encode('utf-8'),
         capture_output=True,
-        text=True,
         check=False,
     )
+    stdout = _decode_subprocess_output(completed.stdout)
+    stderr = _decode_subprocess_output(completed.stderr)
+
     if completed.returncode != 0:
-        stderr = completed.stderr.strip() or completed.stdout.strip()
+        error_output = stderr.strip() or stdout.strip()
         raise RuntimeError(
             f'{family} managed runtime command exited with code {completed.returncode}: '
-            f'{stderr or "unknown error"}'
+            f'{error_output or "unknown error"}'
         )
 
     if response_path.exists():
         raw_output = json.loads(response_path.read_text(encoding='utf-8'))
     else:
-        raw_output = _extract_json_payload(completed.stdout)
+        raw_output = _extract_json_payload(stdout)
 
     return _materialize_runtime_output_paths(raw_output, context['work_dir'])
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -55,12 +56,46 @@ def ensure_bundle(model_dir: Path) -> Path:
     return bundle_root
 
 
+def _patch_checkpoint_loader_map_location(node: object) -> bool:
+    changed = False
+
+    if isinstance(node, dict):
+        if node.get('_target_') == 'CheckpointLoader' and node.get('map_location') != '@device':
+            node['map_location'] = '@device'
+            changed = True
+
+        for value in node.values():
+            if _patch_checkpoint_loader_map_location(value):
+                changed = True
+
+    elif isinstance(node, list):
+        for item in node:
+            if _patch_checkpoint_loader_map_location(item):
+                changed = True
+
+    return changed
+
+
+def ensure_bundle_device_compatibility(bundle_root: Path) -> None:
+    config_dir = bundle_root / 'configs'
+    if not config_dir.exists():
+        return
+
+    for config_path in sorted(config_dir.glob('*.json')):
+        payload = json.loads(config_path.read_text(encoding='utf-8'))
+        if not _patch_checkpoint_loader_map_location(payload):
+            continue
+
+        config_path.write_text(json.dumps(payload, indent=4) + '\n', encoding='utf-8')
+
+
 def main() -> int:
     args = parse_args()
     request = load_request(args.request)
     model_dir = Path(args.model_dir).resolve()
     model_dir.mkdir(parents=True, exist_ok=True)
     bundle_root = ensure_bundle(model_dir)
+    ensure_bundle_device_compatibility(bundle_root)
 
     with tempfile.TemporaryDirectory(prefix='ohif-monai-') as temp_dir:
         temp_root = Path(temp_dir)

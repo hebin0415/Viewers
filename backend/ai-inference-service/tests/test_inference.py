@@ -127,13 +127,14 @@ def test_detection_endpoint_can_run_synchronously() -> None:
     payload = response.json()
     assert payload["status"] == "completed"
     assert payload["taskType"] == "detection"
+    assert payload["resultFormat"] == "rtstruct"
     assert payload["payload"]["summary"] == "YOLO external runner completed detection"
     assert len(payload["payload"]["visualizations"]["detections"]) == 2
     assert payload["payload"]["storage"]["mode"] == "derived-series"
     assert payload["payload"]["storage"]["derivedSeriesInstanceUID"]
     artifact_path = Path(payload["payload"]["artifactUri"].replace("file:///", ""))
     dataset = dcmread(str(artifact_path), stop_before_pixels=True, force=True)
-    assert dataset.SOPClassUID == '1.2.840.10008.5.1.4.1.1.88.11'
+    assert dataset.SOPClassUID == '1.2.840.10008.5.1.4.1.1.481.3'
 
 
 def test_monai_classification_can_run_synchronously() -> None:

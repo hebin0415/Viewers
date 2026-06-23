@@ -1,0 +1,1 @@
+{"jobId": "cab1a49c-24cf-41de-8c2a-9490970d3aaf", "inferenceId": "714069c5-472a-47d0-8319-b0fa80eb5162", "modelName": "yolo", "taskType": "detection", "studyInstanceUID": "1.2.840.113704.9.1000.16.0.20150317132625248", "seriesInstanceUID": "1.2.840.113704.9.1000.16.1.2015031713345078300050001", "options": {"async": true, "returnContours": false, "confidenceThreshold": 0.25}}

@@ -1,0 +1,1 @@
+{"summary": "AI-assisted YOLO review of the representative source image identified no candidate lesion above the configured confidence threshold (25%).", "detections": [], "metadata": {"framework": "Ultralytics YOLO", "weightsFile": "/models/yolo/yolo26n.pt", "reviewedSliceCount": 1, "positiveSliceCount": 0, "reviewMode": "full-series", "reviewedSliceIndices": [0]}}

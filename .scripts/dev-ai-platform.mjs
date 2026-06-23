@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { spawn } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
 import process from 'node:process';
@@ -135,11 +135,60 @@ const isPortOpen = (host, port) =>
     socket.once('error', () => resolve(false));
   });
 
+const shouldUseCmdShim = command =>
+  process.platform === 'win32' && !path.isAbsolute(command) && !command.includes(path.sep);
+
+const escapeForCmd = value => {
+  const text = String(value);
+
+  if (!/[\s"^&|<>()]/.test(text)) {
+    return text;
+  }
+
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const spawnCommand = (command, args, options = {}) => {
+  const commandToRun = shouldUseCmdShim(command)
+    ? process.env.ComSpec ?? 'cmd.exe'
+    : command;
+  const commandArgs = shouldUseCmdShim(command)
+    ? ['/d', '/s', '/c', [command, ...args].map(escapeForCmd).join(' ')]
+    : args;
+
+  const child = spawn(commandToRun, commandArgs, {
+    cwd: options.cwd,
+    env: options.env,
+    stdio: options.stdio ?? 'pipe',
+  });
+
+  const completion = new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          signal
+            ? `Command \"${command}\" exited due to signal ${signal}.`
+            : `Command \"${command}\" exited with code ${code}.`
+        )
+      );
+    });
+  });
+
+  child.completion = completion;
+  return child;
+};
+
 if (!fs.existsSync(workspaceLink)) {
-  await execa('yarn', ['install', '--frozen-lockfile'], {
+  await spawnCommand('yarn', ['install', '--frozen-lockfile'], {
     cwd: repoRoot,
     stdio: 'inherit',
-  });
+  }).completion;
 }
 
 const children = [];
@@ -155,7 +204,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 if (!(await isPortOpen(viewerHost, viewerPort))) {
   children.push(
-    execa('yarn', ['dev:orthanc'], {
+    spawnCommand('yarn', ['dev:orthanc'], {
       cwd: repoRoot,
       stdio: 'inherit',
     })
@@ -166,7 +215,7 @@ if (!(await isPortOpen(viewerHost, viewerPort))) {
 
 if (!(await isPortOpen(backendHost, backendPort))) {
   children.push(
-    execa(pythonExe, ['-m', 'app'], {
+    spawnCommand(pythonExe, ['-m', 'app'], {
       cwd: backendRoot,
       stdio: 'inherit',
       env: {
@@ -185,7 +234,7 @@ if (children.length === 0) {
 
 await Promise.race(
   children.map(child =>
-    child.catch(error => {
+    child.completion.catch(error => {
       shutdown('SIGTERM');
       throw error;
     })

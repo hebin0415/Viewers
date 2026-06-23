@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _weights_marker_path(home_dir: Path, weights_task: str) -> Path:
+    safe_task = re.sub(r'[^a-zA-Z0-9._-]+', '-', weights_task).strip('-') or 'default'
+    return home_dir / f'.weights-ready-{safe_task}'
+
+
+def _has_downloaded_weights(home_dir: Path) -> bool:
+    for path in home_dir.rglob('*'):
+        if path.is_file() and not path.name.startswith('.weights-ready-'):
+            return True
+    return False
+
+
 def ensure_weights(model_dir: Path) -> tuple[str, str, str]:
     weights_task = os.environ.get('AI_INFERENCE_NNUNET_WEIGHTS_TASK', 'total_fast').strip() or 'total_fast'
     task = os.environ.get('AI_INFERENCE_NNUNET_TASK', 'total').strip() or 'total'
@@ -32,6 +45,13 @@ def ensure_weights(model_dir: Path) -> tuple[str, str, str]:
     home_dir = model_dir / 'totalsegmentator-home'
     home_dir.mkdir(parents=True, exist_ok=True)
     os.environ['TOTALSEG_HOME_DIR'] = str(home_dir)
+
+    ready_marker = _weights_marker_path(home_dir, weights_task)
+    if ready_marker.exists():
+        return weights_task, task, roi
+    if _has_downloaded_weights(home_dir):
+        ready_marker.write_text('ready\n', encoding='utf-8')
+        return weights_task, task, roi
 
     completed = subprocess.run(
         ['totalseg_download_weights', '-t', weights_task],
@@ -42,6 +62,8 @@ def ensure_weights(model_dir: Path) -> tuple[str, str, str]:
     if completed.returncode != 0:
         error_text = completed.stderr.strip() or completed.stdout.strip() or 'unknown error'
         raise RuntimeError(f'TotalSegmentator weight download failed: {error_text}')
+
+    ready_marker.write_text('ready\n', encoding='utf-8')
 
     return weights_task, task, roi
 
