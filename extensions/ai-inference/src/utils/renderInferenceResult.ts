@@ -79,6 +79,69 @@ function getActiveViewportContext(
   };
 }
 
+function getDetectionReferencedImageId(
+  detection: DetectionVisualization,
+  context: ViewportContext
+): string | undefined {
+  if (!detection.referencedSOPInstanceUID) {
+    return context.referencedImageId;
+  }
+
+  const instances = context.displaySet.instances ?? [];
+  const imageIds: string[] = context.displaySet.imageIds ?? [];
+  const detectionIndex = instances.findIndex(
+    instance => instance?.SOPInstanceUID === detection.referencedSOPInstanceUID
+  );
+
+  return detectionIndex >= 0
+    ? (imageIds[detectionIndex] ?? context.referencedImageId)
+    : context.referencedImageId;
+}
+
+function getDetectionFrameNumber(
+  detection: DetectionVisualization,
+  context: ViewportContext
+): number {
+  if (detection.referencedSOPInstanceUID) {
+    const instances = context.displaySet.instances ?? [];
+    const detectionIndex = instances.findIndex(
+      instance => instance?.SOPInstanceUID === detection.referencedSOPInstanceUID
+    );
+
+    if (detectionIndex >= 0) {
+      return detectionIndex + 1;
+    }
+  }
+
+  return (detection.sliceIndex ?? 0) + 1;
+}
+
+function buildDetectionOverlayLabel(detection: DetectionVisualization): string {
+  if (detection.annotationText) {
+    return detection.annotationText;
+  }
+
+  const detailParts = [
+    detection.anatomicalSite ? `Site: ${detection.anatomicalSite}` : null,
+    detection.lesionType ? `Type: ${detection.lesionType}` : null,
+    detection.sizeText ? `Size: ${detection.sizeText}` : null,
+    detection.assessment ? `Assessment: ${detection.assessment}` : null,
+    `Confidence: ${Math.round(detection.confidence * 100)}%`,
+  ].filter(Boolean);
+
+  return [detection.label, ...detailParts].join(' | ');
+}
+
+function getCachedStatsTargetId(referencedImageId: string | undefined, index: number): string {
+  if (!referencedImageId) {
+    return `detection-${index}`;
+  }
+
+  return referencedImageId.startsWith('imageId:') || referencedImageId.startsWith('volumeId:')
+    ? referencedImageId
+    : `imageId:${referencedImageId}`;
+}
+
 export function clearRenderedAnnotations(annotationIds: string[]): void {
   annotationIds.forEach(annotationId => {
     annotation.state.removeAnnotation(annotationId);
@@ -153,6 +216,7 @@ function addDetectionAnnotations(
       [right, bottom],
       [left, bottom],
     ].map(point => viewport.canvasToWorld(point));
+    const detectionReferencedImageId = getDetectionReferencedImageId(detection, context);
     const annotationUID = `ai-detection-${detection.id || index}`;
 
     annotation.state.addAnnotation({
@@ -162,12 +226,12 @@ function addDetectionAnnotations(
       invalidated: true,
       metadata: {
         toolName: 'RectangleROI',
-        referencedImageId,
+        referencedImageId: detectionReferencedImageId,
         FrameOfReferenceUID: frameOfReferenceUID,
         displaySetInstanceUID: displaySet.displaySetInstanceUID,
       },
       data: {
-        label: `${detection.label} ${Math.round(detection.confidence * 100)}%`,
+        label: buildDetectionOverlayLabel(detection),
         handles: {
           textBox: {
             hasMoved: false,
@@ -177,7 +241,7 @@ function addDetectionAnnotations(
           points,
         },
         cachedStats: {
-          [referencedImageId ?? `detection-${index}`]: {
+          [getCachedStatsTargetId(detectionReferencedImageId, index)]: {
             Modality: displaySet.Modality,
             area: Number((detection.width * detection.height * 100).toFixed(2)),
             areaUnit: '%',
@@ -187,7 +251,7 @@ function addDetectionAnnotations(
             modalityUnit: '%',
           },
         },
-        frameNumber: (detection.sliceIndex ?? 0) + 1,
+        frameNumber: getDetectionFrameNumber(detection, context),
       },
     } as any);
 

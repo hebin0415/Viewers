@@ -1,0 +1,1 @@
+{"jobId": "155adbe3-2662-4279-b531-f1379051f2d0", "inferenceId": "f7643e33-2ba8-4c37-bc05-5c3baa0d38a5", "modelName": "monai", "taskType": "segmentation", "studyInstanceUID": "1.2.840.113704.9.1000.16.0.20150317132625248", "seriesInstanceUID": "1.2.840.113704.9.1000.16.1.2015031713345078300050001", "options": {"async": false, "returnContours": false, "confidenceThreshold": 0.25}}

@@ -82,7 +82,10 @@ def test_create_sr_dataset_uses_top_level_document_container(
     assert len(dataset.ContentSequence) == 2
     assert all(getattr(item, 'RelationshipType', None) == 'CONTAINS' for item in dataset.ContentSequence)
     assert all(getattr(item, 'ValueType', None) == 'TEXT' for item in dataset.ContentSequence)
-    assert not any(hasattr(item, 'ContentSequence') for item in dataset.ContentSequence)
+    assert not hasattr(dataset.ContentSequence[0], 'ContentSequence')
+    assert dataset.ContentSequence[1].ContentSequence[0].ValueType == 'IMAGE'
+    reference = dataset.ContentSequence[1].ContentSequence[0].ReferencedSOPSequence[0]
+    assert reference.ReferencedSOPInstanceUID == dataset.CurrentRequestedProcedureEvidenceSequence[0].ReferencedSeriesSequence[0].ReferencedSOPSequence[0].ReferencedSOPInstanceUID
 
 
 def test_create_rtstruct_dataset_references_source_image_series(

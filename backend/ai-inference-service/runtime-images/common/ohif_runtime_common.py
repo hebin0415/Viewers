@@ -86,14 +86,41 @@ def representative_slice_image(datasets: list[pydicom.Dataset]) -> tuple[np.ndar
         raise RuntimeError('No DICOM datasets were loaded for representative slice extraction.')
 
     slice_index = len(datasets) // 2
-    dataset = datasets[slice_index]
+    return dataset_to_rgb_image(datasets[slice_index]), slice_index
+
+
+def sampled_slice_images(
+    datasets: list[pydicom.Dataset],
+    *,
+    sparse_sample_count: int = 1,
+    full_series_review: bool = False,
+) -> list[tuple[np.ndarray, int]]:
+    if not datasets:
+        raise RuntimeError('No DICOM datasets were loaded for slice sampling.')
+
+    if full_series_review:
+        slice_indexes = list(range(len(datasets)))
+    else:
+        sample_count = max(1, min(int(sparse_sample_count or 1), len(datasets)))
+        if sample_count == 1:
+            slice_indexes = [len(datasets) // 2]
+        else:
+            slice_indexes = []
+            for position in np.linspace(0, len(datasets) - 1, num=sample_count):
+                slice_index = int(round(float(position)))
+                if slice_index not in slice_indexes:
+                    slice_indexes.append(slice_index)
+
+    return [(dataset_to_rgb_image(datasets[slice_index]), slice_index) for slice_index in slice_indexes]
+
+
+def dataset_to_rgb_image(dataset: pydicom.Dataset) -> np.ndarray:
     image = dataset.pixel_array.astype(np.float32)
     if image.ndim > 2:
         image = image.squeeze()
     image = _apply_rescale(dataset, image)
     image = _normalize_to_uint8(image)
-    rgb = np.stack([image, image, image], axis=-1)
-    return rgb, slice_index
+    return np.stack([image, image, image], axis=-1)
 
 
 def dicom_series_to_nifti(dicom_dir: Path, output_path: Path) -> Path:

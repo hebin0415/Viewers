@@ -40,7 +40,7 @@ def _adapt_monai_output(raw_output: dict, request: dict, _context: dict[str, str
         'status': 'completed',
         'resultFormat': raw_output.get(
             'resultFormat',
-            'dicom-seg' if task_type == 'segmentation' else 'rtstruct' if task_type == 'detection' else 'dicom-sr',
+            'dicom-seg' if task_type == 'segmentation' else 'dicom-sr',
         ),
         'payload': {
             'summary': summary or f'MONAI wrapper completed {task_type}',

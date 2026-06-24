@@ -20,6 +20,9 @@ const initialState: WorkflowState = {
   models: SUPPORTED_MODELS,
   lastJob: null,
   lastResult: null,
+  recentResults: [],
+  patientReportText: null,
+  focusedFinding: null,
   tasks: [],
   renderedAnnotationIds: [],
   renderedSegmentationId: null,
@@ -60,6 +63,11 @@ export const aiWorkflowStore = {
     emitChange();
   },
 };
+
+if (typeof window !== 'undefined') {
+  (window as Window & { __AI_WORKFLOW_STORE__?: typeof aiWorkflowStore }).__AI_WORKFLOW_STORE__ =
+    aiWorkflowStore;
+}
 
 export function useAiWorkflowStore(): WorkflowState {
   return useSyncExternalStore(

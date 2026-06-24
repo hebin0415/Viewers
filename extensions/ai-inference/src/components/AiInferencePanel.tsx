@@ -131,6 +131,15 @@ const compactHintStyle: React.CSSProperties = {
   lineHeight: 1.35,
 };
 
+const reportCardStyle: React.CSSProperties = {
+  whiteSpace: 'pre-wrap',
+  fontSize: '0.76rem',
+  lineHeight: 1.45,
+  color: '#e2e8f0',
+  maxHeight: '12rem',
+  overflowY: 'auto',
+};
+
 const TASKS_SHELL_CLASS_NAME = 'aiInferenceTasksShell';
 
 const TASKS_SHELL_CSS = `
@@ -274,6 +283,7 @@ export function AiInferencePanel({
     !workflow.isBusy && !activeTask && !!workflow.selectedModelName && canRunSelectedModel;
   const canClearSelectedModelResults =
     !workflow.isBusy && !activeTask && selectedModelResultCount > 0;
+  const canGeneratePatientReport = workflow.recentResults.length > 0;
   const primaryActionLabel = getPrimaryActionLabel(
     workflow.isBusy,
     activeTask,
@@ -581,6 +591,27 @@ export function AiInferencePanel({
         <div style={{ marginTop: '0.45rem' }}>
           <button
             type="button"
+            data-cy="ai-generate-patient-report"
+            style={{
+              ...buttonStyle,
+              width: '100%',
+              opacity: canGeneratePatientReport ? 1 : 0.68,
+              background: 'rgba(8, 47, 73, 0.95)',
+            }}
+            onClick={() => {
+              if (canGeneratePatientReport) {
+                void runCommand('aiInferenceGeneratePatientReport');
+              }
+            }}
+            disabled={!canGeneratePatientReport}
+          >
+            Generate Patient AI Report
+          </button>
+        </div>
+
+        <div style={{ marginTop: '0.45rem' }}>
+          <button
+            type="button"
             style={{
               ...buttonStyle,
               width: '100%',
@@ -694,6 +725,23 @@ export function AiInferencePanel({
           </table>
         </div>
       </div>
+
+      {workflow.patientReportText ? (
+        <div style={cardStyle}>
+          <div
+            style={{ fontWeight: 600, marginBottom: '0.45rem', fontSize: '0.84rem' }}
+            data-cy="ai-patient-report-title"
+          >
+            Patient AI Report
+          </div>
+          <div
+            style={reportCardStyle}
+            data-cy="ai-patient-report-output"
+          >
+            {workflow.patientReportText}
+          </div>
+        </div>
+      ) : null}
 
       {isCurrentSeriesAiResult ? (
         <div style={{ ...cardStyle, color: '#facc15' }}>

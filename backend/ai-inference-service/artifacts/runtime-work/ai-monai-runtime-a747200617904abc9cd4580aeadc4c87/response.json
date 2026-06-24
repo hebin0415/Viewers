@@ -1,0 +1,1 @@
+{"summary": "MONAI bundle spleen_ct_segmentation produced a segmentation mask.", "segmentation": {"label": "spleen", "segmentIndex": 1, "x": 0.15625, "y": 0.0546875, "width": 0.412109375, "height": 0.9140625, "sliceIndex": 6}, "metadata": {"framework": "MONAI Bundle", "bundleRoot": "/models/monai/spleen_ct_segmentation"}}

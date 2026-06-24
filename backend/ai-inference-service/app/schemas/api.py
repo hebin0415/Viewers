@@ -52,6 +52,8 @@ class InferenceExecutionOptions(BaseModel):
     run_async: bool = Field(default=True, alias="async")
     returnContours: bool = False
     confidenceThreshold: float = Field(default=0.25, ge=0.0, le=1.0)
+    sparseSampleCount: int = Field(default=1, ge=1, le=512)
+    fullSeriesReview: bool = False
 
 
 class InferenceRequest(BaseModel):
@@ -88,6 +90,11 @@ class DetectionVisualization(BaseModel):
     width: float = Field(ge=0.0, le=1.0)
     height: float = Field(ge=0.0, le=1.0)
     sliceIndex: int | None = None
+    anatomicalSite: str | None = None
+    lesionType: str | None = None
+    sizeText: str | None = None
+    assessment: str | None = None
+    annotationText: str | None = None
 
 
 class InferenceVisualizations(BaseModel):

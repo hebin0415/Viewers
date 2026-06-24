@@ -5,13 +5,20 @@ from pathlib import Path
 import sys
 import types
 
+import numpy as np
+
 
 def _load_nnunet_engine_module():
+    sys.modules.setdefault('nibabel', types.SimpleNamespace(load=lambda *_args, **_kwargs: None))
     sys.modules.setdefault(
         'ohif_runtime_common',
         types.SimpleNamespace(
+            compute_mask_visualization=lambda *args, **kwargs: None,
+            dicom_series_to_nifti=lambda *args, **kwargs: None,
             fetch_series_to_directory=lambda *args, **kwargs: None,
+            find_first_nifti=lambda *args, **kwargs: None,
             load_request=lambda *args, **kwargs: {},
+            load_sorted_datasets=lambda *args, **kwargs: [],
             normalize_device_for_totalsegmentator=lambda device: device,
             write_response=lambda *args, **kwargs: None,
         ),
@@ -73,3 +80,16 @@ def test_ensure_weights_adopts_prewarmed_home_dir_without_redownloading(
 
     assert module.ensure_weights(model_dir) == ('total_fast', 'total', '')
     assert (model_dir / 'totalsegmentator-home' / '.weights-ready-total_fast').exists()
+
+
+def test_normalize_mask_volume_moves_slice_axis_to_front() -> None:
+    module = _load_nnunet_engine_module()
+
+    mask = np.zeros((16, 16, 3), dtype=np.uint8)
+    mask[4:8, 5:9, 1] = 1
+
+    normalized = module.normalize_mask_volume(mask, frame_count=3)
+
+    assert normalized.shape == (3, 16, 16)
+    assert normalized.dtype == np.bool_
+    assert normalized[1, 4:8, 5:9].all()

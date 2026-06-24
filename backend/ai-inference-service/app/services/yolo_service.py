@@ -10,7 +10,7 @@ class YoloService:
     runner_config = ExternalRunnerConfig(
         family="yolo",
         command_env_name="AI_INFERENCE_YOLO_COMMAND",
-        default_result_format="json-detection",
+        default_result_format="dicom-sr",
         recommended_command=["python", "runners/yolo_wrapper.py"],
         wrapper_command_env_name="AI_INFERENCE_YOLO_WRAPPER_COMMAND",
         managed_command_env_name="AI_INFERENCE_YOLO_MANAGED_COMMAND",

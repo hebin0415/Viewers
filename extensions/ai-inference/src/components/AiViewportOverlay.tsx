@@ -18,24 +18,52 @@ export function AiViewportOverlay(): JSX.Element | null {
   const workflow = useAiWorkflowStore();
   const result = workflow.lastResult;
 
-  if (!result) {
+  if (!result && !workflow.focusedFinding) {
     return null;
   }
 
-  const segmentationReady = Boolean(result.payload.visualizations?.segmentation);
-  const detectionCount = result.payload.visualizations?.detections?.length ?? 0;
-  const storageMode = result.payload.storage?.mode ?? 'overlay-only';
+  const segmentationReady = Boolean(result?.payload.visualizations?.segmentation);
+  const detectionCount = result?.payload.visualizations?.detections?.length ?? 0;
+  const storageMode = result?.payload.storage?.mode ?? 'overlay-only';
+  const focusedFinding = workflow.focusedFinding;
 
   return (
-    <div style={overlayStyle}>
+    <div
+      style={overlayStyle}
+      data-cy="ai-viewport-overlay"
+    >
       <div style={{ fontWeight: 700 }}>AI Result</div>
-      <div>
-        {result.modelName} / {result.taskType}
-      </div>
-      <div>Status: {result.status}</div>
-      <div>Storage: {storageMode}</div>
-      <div>Segmentation: {segmentationReady ? 'ready' : 'none'}</div>
-      <div>Detections: {detectionCount}</div>
+      {result ? (
+        <>
+          <div>
+            {result.modelName} / {result.taskType}
+          </div>
+          <div>Status: {result.status}</div>
+          <div>Storage: {storageMode}</div>
+          <div>Segmentation: {segmentationReady ? 'ready' : 'none'}</div>
+          <div>Detections: {detectionCount}</div>
+        </>
+      ) : null}
+      {focusedFinding ? (
+        <div
+          data-cy="ai-focused-finding-overlay"
+          style={{
+            marginTop: '0.3rem',
+            paddingTop: '0.3rem',
+            borderTop: '1px solid rgba(148, 163, 184, 0.2)',
+            display: 'grid',
+            gap: '0.1rem',
+          }}
+        >
+          <div style={{ fontWeight: 700 }}>Focused Finding</div>
+          <div>Site: {focusedFinding.anatomicalSite}</div>
+          <div>Type: {focusedFinding.lesionType}</div>
+          <div>Size: {focusedFinding.sizeText}</div>
+          <div>Assessment: {focusedFinding.assessment}</div>
+          <div>Confidence: {focusedFinding.confidenceText}</div>
+          <div>Slice: {focusedFinding.sliceText}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

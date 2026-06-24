@@ -43,6 +43,7 @@
     "dev:orthanc": "lerna run dev:orthanc --stream",
     "dev:orthanc:no:cache": "lerna run dev:orthanc:no:cache --stream",
     "dev:ai:platform": "node .scripts/dev-ai-platform.mjs",
+    "search:source": "powershell -ExecutionPolicy Bypass -File .scripts/search-source.ps1",
     "dev:dcm4chee": "lerna run dev:dcm4chee --stream",
     "dev:static": "lerna run dev:static --stream",
     "orthanc:up": "docker compose -f platform/app/.recipes/Nginx-Orthanc/docker-compose.yml up",

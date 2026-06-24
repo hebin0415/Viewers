@@ -129,6 +129,71 @@ def _build_rtstruct_reference_sequence(source_images: list[FileDataset], study_i
     return Sequence([referenced_frame_of_reference])
 
 
+def _build_image_reference_content_item(source_image: FileDataset) -> Dataset:
+    reference = Dataset()
+    reference.ReferencedSOPClassUID = source_image.SOPClassUID
+    reference.ReferencedSOPInstanceUID = source_image.SOPInstanceUID
+
+    content_item = Dataset()
+    content_item.RelationshipType = 'INFERRED FROM'
+    content_item.ValueType = 'IMAGE'
+    content_item.ReferencedSOPSequence = Sequence([reference])
+    return content_item
+
+
+def _describe_detection_site(detection) -> str:
+    if getattr(detection, 'anatomicalSite', None):
+        return detection.anatomicalSite
+
+    center_x = float(detection.x) + float(detection.width) / 2.0
+    center_y = float(detection.y) + float(detection.height) / 2.0
+    horizontal = 'left' if center_x < 0.33 else 'right' if center_x > 0.67 else 'central'
+    vertical = 'upper' if center_y < 0.33 else 'lower' if center_y > 0.67 else 'mid'
+    return f'{horizontal}-{vertical} field'
+
+
+def _describe_detection_assessment(detection) -> str:
+    if getattr(detection, 'assessment', None):
+        return detection.assessment
+
+    confidence = float(getattr(detection, 'confidence', 0.0) or 0.0)
+    if confidence >= 0.75:
+        return 'high suspicion'
+    if confidence >= 0.4:
+        return 'moderate suspicion'
+    return 'low suspicion'
+
+
+def _describe_detection_size(detection, source_image: FileDataset) -> str:
+    if getattr(detection, 'sizeText', None):
+        return detection.sizeText
+
+    rows = int(getattr(source_image, 'Rows', 256))
+    columns = int(getattr(source_image, 'Columns', 256))
+    width_px = max(1, round(float(detection.width) * columns))
+    height_px = max(1, round(float(detection.height) * rows))
+    return (
+        f'{width_px}x{height_px} px '
+        f'({float(detection.width) * 100:.1f}% x {float(detection.height) * 100:.1f}%)'
+    )
+
+
+def _build_detection_finding_text(detection, source_image: FileDataset) -> str:
+    site = _describe_detection_site(detection)
+    lesion_type = getattr(detection, 'lesionType', None) or detection.label
+    size_text = _describe_detection_size(detection, source_image)
+    assessment = _describe_detection_assessment(detection)
+    confidence_percent = float(getattr(detection, 'confidence', 0.0) or 0.0) * 100.0
+    slice_index = detection.sliceIndex if detection.sliceIndex is not None else 0
+
+    return (
+        f'{detection.label} | site={site} | type={lesion_type} | size={size_text} '
+        f'| assessment={assessment} | confidence={confidence_percent:.1f}% '
+        f'| bbox=({float(detection.x):.3f},{float(detection.y):.3f},{float(detection.width):.3f},{float(detection.height):.3f}) '
+        f'| slice={slice_index}'
+    )
+
+
 def create_rtstruct_dataset(
     *,
     inference_id: str,
@@ -376,15 +441,16 @@ def create_sr_dataset(
 
     detections = payload.visualizations.detections if payload.visualizations else []
     for detection in detections:
+        referenced_source_image = source_images[
+            _resolve_detection_slice_index(detection.sliceIndex, len(source_images))
+        ]
+
         item = Dataset()
         item.RelationshipType = 'CONTAINS'
         item.ValueType = 'TEXT'
         item.ConceptNameCodeSequence = Sequence([_code_dataset('121071', 'DCM', 'Finding site')])
-        item.TextValue = (
-            f'{detection.label} confidence={detection.confidence:.2f} '
-            f'bbox=({detection.x:.3f},{detection.y:.3f},{detection.width:.3f},{detection.height:.3f}) '
-            f'slice={detection.sliceIndex if detection.sliceIndex is not None else 0}'
-        )
+        item.TextValue = _build_detection_finding_text(detection, referenced_source_image)
+        item.ContentSequence = Sequence([_build_image_reference_content_item(referenced_source_image)])
         content_items.append(item)
 
     if not detections:

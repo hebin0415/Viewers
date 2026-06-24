@@ -32,6 +32,12 @@ export interface DetectionVisualization {
   width: number;
   height: number;
   sliceIndex?: number;
+  anatomicalSite?: string | null;
+  lesionType?: string | null;
+  sizeText?: string | null;
+  assessment?: string | null;
+  annotationText?: string | null;
+  referencedSOPInstanceUID?: string | null;
 }
 
 export interface InferenceVisualizations {
@@ -80,6 +86,8 @@ export interface InferenceRequestOptions {
   async?: boolean;
   returnContours?: boolean;
   confidenceThreshold?: number;
+  sparseSampleCount?: number;
+  fullSeriesReview?: boolean;
 }
 
 export interface InferenceRequest {
@@ -150,6 +158,17 @@ export interface WorkflowTask {
   error?: string | null;
 }
 
+export interface FocusedFindingDetails {
+  label: string;
+  anatomicalSite: string;
+  lesionType: string;
+  sizeText: string;
+  assessment: string;
+  confidenceText: string;
+  sliceText: string;
+  referencedSOPInstanceUID?: string | null;
+}
+
 export interface WorkflowState {
   backendUrl: string;
   selectedModelName: string;
@@ -168,6 +187,9 @@ export interface WorkflowState {
   models: ModelDescriptor[];
   lastJob: JobStatusResult | null;
   lastResult: InferenceResult | null;
+  recentResults: InferenceResult[];
+  patientReportText: string | null;
+  focusedFinding: FocusedFindingDetails | null;
   tasks: WorkflowTask[];
   renderedAnnotationIds: string[];
   renderedSegmentationId: string | null;

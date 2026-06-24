@@ -9,7 +9,7 @@ on:
           CS3D branch (e.g. main, origin:feat/foo) or version (e.g. 4.18.2, 4.19+, 4.x). Only used
           when ohif-integration label is present or via workflow_dispatch.
         required: false
-        default: '4.19+'
+        default: "4.19+"
 
 permissions:
   contents: read
@@ -115,7 +115,6 @@ jobs:
         run: |
           export NODE_OPTIONS="--max_old_space_size=10192"
           bun run test:e2e:coverage
-
       # ── Common: collect test results and coverage ───────────────────────
       - name: Create directory of test results
         if: ${{ !cancelled() }}

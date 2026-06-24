@@ -14,6 +14,8 @@ import {
   getViewportDisplaySetUIDsAfterRemoval,
 } from './utils/derivedDisplaySetActivation';
 import {
+  DetectionVisualization,
+  FocusedFindingDetails,
   HealthStatus,
   InferenceJobStatus,
   InferenceResult,
@@ -29,6 +31,7 @@ const DERIVED_DISPLAY_SET_RETRY_DELAY_MS = 250;
 const DERIVED_SERIES_REFRESH_RETRY_COUNT = 20;
 const DERIVED_SERIES_REFRESH_RETRY_DELAY_MS = 1000;
 const AI_RESULT_PREFIX = 'AI |';
+const MAX_RECENT_RESULTS = 24;
 
 type AiWorkflowState = ReturnType<typeof aiWorkflowStore.getState>;
 
@@ -189,6 +192,174 @@ const getOfflineIndicatorState = (
   }
 
   return 'offline';
+};
+
+const parseFindingText = (findingText: string, referencedSOPInstanceUID?: string | null) => {
+  const trimmedText = String(findingText ?? '').trim();
+
+  if (!trimmedText) {
+    return null;
+  }
+
+  const segments = trimmedText
+    .split('|')
+    .map(segment => segment.trim())
+    .filter(Boolean);
+  const legacyMatch = trimmedText.match(
+    /^(.*?)\s+confidence=([-+]?\d*\.?\d+%?)\s+bbox=\(([-+]?\d*\.?\d+),([-+]?\d*\.?\d+),([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)\)\s+slice=(\d+)/i
+  );
+
+  if (legacyMatch) {
+    const confidenceRaw = legacyMatch[2].includes('%') ? legacyMatch[2] : `${legacyMatch[2]}%`;
+    const confidenceValue = Number.parseFloat(legacyMatch[2].replace('%', ''));
+    const sliceIndex = Number.parseInt(legacyMatch[7], 10);
+    const x = Number.parseFloat(legacyMatch[3]);
+    const y = Number.parseFloat(legacyMatch[4]);
+    const width = Number.parseFloat(legacyMatch[5]);
+    const height = Number.parseFloat(legacyMatch[6]);
+    const inferredSite = (() => {
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+      const horizontal = centerX < 0.33 ? 'left' : centerX > 0.67 ? 'right' : 'central';
+      const vertical = centerY < 0.33 ? 'upper' : centerY > 0.67 ? 'lower' : 'mid';
+      return `${horizontal}-${vertical} field`;
+    })();
+    const assessment =
+      confidenceValue >= 75
+        ? 'high suspicion'
+        : confidenceValue >= 40
+          ? 'moderate suspicion'
+          : 'low suspicion';
+
+    const detection: DetectionVisualization = {
+      id: `sr-finding-${referencedSOPInstanceUID ?? legacyMatch[1]}-${sliceIndex}`,
+      label: legacyMatch[1].trim() || 'Finding',
+      confidence: Number.isFinite(confidenceValue)
+        ? legacyMatch[2].includes('%')
+          ? confidenceValue / 100
+          : confidenceValue
+        : 0,
+      x,
+      y,
+      width,
+      height,
+      sliceIndex: Number.isFinite(sliceIndex) ? sliceIndex : 0,
+      anatomicalSite: inferredSite,
+      lesionType: legacyMatch[1].trim() || 'Finding',
+      sizeText: `${(width * 100).toFixed(1)}% x ${(height * 100).toFixed(1)}%`,
+      assessment,
+      annotationText: trimmedText,
+      referencedSOPInstanceUID: referencedSOPInstanceUID ?? null,
+    };
+
+    const focusedFinding: FocusedFindingDetails = {
+      label: detection.label,
+      anatomicalSite: detection.anatomicalSite ?? 'unspecified',
+      lesionType: detection.lesionType ?? detection.label,
+      sizeText: detection.sizeText ?? 'unspecified',
+      assessment,
+      confidenceText: confidenceRaw,
+      sliceText: `slice ${detection.sliceIndex ?? 0}`,
+      referencedSOPInstanceUID: referencedSOPInstanceUID ?? null,
+    };
+
+    return { detection, focusedFinding };
+  }
+
+  const label = segments.shift() ?? 'Finding';
+  const fieldMap = new Map<string, string>();
+
+  segments.forEach(segment => {
+    const separatorIndex = segment.indexOf('=');
+    if (separatorIndex <= 0) {
+      return;
+    }
+
+    const key = segment.slice(0, separatorIndex).trim().toLowerCase();
+    const value = segment.slice(separatorIndex + 1).trim();
+    if (key) {
+      fieldMap.set(key, value);
+    }
+  });
+
+  const bboxValue = fieldMap.get('bbox');
+  const bboxMatch = bboxValue?.match(
+    /^\(([-+]?\d*\.?\d+),([-+]?\d*\.?\d+),([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)\)$/
+  );
+
+  if (!bboxMatch) {
+    return null;
+  }
+
+  const sliceIndex = Number.parseInt(fieldMap.get('slice') ?? '0', 10);
+  const confidenceRaw = fieldMap.get('confidence') ?? '0%';
+  const confidenceNumeric = Number.parseFloat(confidenceRaw.replace('%', ''));
+
+  const detection: DetectionVisualization = {
+    id: `sr-finding-${referencedSOPInstanceUID ?? label}-${sliceIndex}`,
+    label,
+    confidence: Number.isFinite(confidenceNumeric) ? confidenceNumeric / 100 : 0,
+    x: Number.parseFloat(bboxMatch[1]),
+    y: Number.parseFloat(bboxMatch[2]),
+    width: Number.parseFloat(bboxMatch[3]),
+    height: Number.parseFloat(bboxMatch[4]),
+    sliceIndex: Number.isFinite(sliceIndex) ? sliceIndex : 0,
+    anatomicalSite: fieldMap.get('site') ?? null,
+    lesionType: fieldMap.get('type') ?? null,
+    sizeText: fieldMap.get('size') ?? null,
+    assessment: fieldMap.get('assessment') ?? null,
+    annotationText: trimmedText,
+    referencedSOPInstanceUID: referencedSOPInstanceUID ?? null,
+  };
+
+  const focusedFinding: FocusedFindingDetails = {
+    label,
+    anatomicalSite: detection.anatomicalSite ?? 'unspecified',
+    lesionType: detection.lesionType ?? label,
+    sizeText: detection.sizeText ?? 'unspecified',
+    assessment: detection.assessment ?? 'unspecified',
+    confidenceText: confidenceRaw,
+    sliceText: `slice ${detection.sliceIndex ?? 0}`,
+    referencedSOPInstanceUID: referencedSOPInstanceUID ?? null,
+  };
+
+  return { detection, focusedFinding };
+};
+
+const buildPatientReport = (results: InferenceResult[]) => {
+  if (!results.length) {
+    return null;
+  }
+
+  const summaries = results
+    .map(result => {
+      const detections = result.payload.visualizations?.detections ?? [];
+      const segmentation = result.payload.visualizations?.segmentation;
+      const storageMode = result.payload.storage?.mode ?? 'overlay-only';
+      const findingSummary = detections.length
+        ? detections
+            .map(
+              detection =>
+                `${detection.label} (${detection.anatomicalSite ?? 'site n/a'}, ${Math.round(
+                  detection.confidence * 100
+                )}%, ${detection.assessment ?? 'assessment n/a'})`
+            )
+            .join('; ')
+        : segmentation
+          ? `${segmentation.label} segmentation ready`
+          : 'no direct finding payload';
+
+      return [
+        `${result.modelName} ${result.taskType}`,
+        `status=${result.status}`,
+        `storage=${storageMode}`,
+        `summary=${result.payload.summary}`,
+        `findings=${findingSummary}`,
+      ].join(' | ');
+    })
+    .join('\n');
+
+  return ['Patient AI Report', summaries].join('\n');
 };
 
 const getCommandsModule = ({
@@ -389,6 +560,20 @@ const getCommandsModule = ({
 
   const getTaskByInferenceId = (inferenceId: string) =>
     aiWorkflowStore.getState().tasks.find(task => task.inferenceId === inferenceId) ?? null;
+
+  const upsertRecentResult = (result: InferenceResult) => {
+    aiWorkflowStore.update(current => {
+      const recentResults = [
+        result,
+        ...current.recentResults.filter(item => item.inferenceId !== result.inferenceId),
+      ].slice(0, MAX_RECENT_RESULTS);
+
+      return {
+        recentResults,
+        lastResult: result,
+      };
+    });
+  };
 
   const isActiveViewportAiResult = () => {
     const activeViewportId =
@@ -1274,6 +1459,23 @@ const getCommandsModule = ({
           renderedAnnotationIds: [],
           renderedSegmentationId: null,
           lastResult: current.lastResult?.modelName === modelName ? null : current.lastResult,
+          recentResults: current.recentResults.filter(
+            result =>
+              !(
+                result.modelName === modelName &&
+                result.reference.studyInstanceUID === currentStudyInstanceUID
+              )
+          ),
+          patientReportText: buildPatientReport(
+            current.recentResults.filter(
+              result =>
+                !(
+                  result.modelName === modelName &&
+                  result.reference.studyInstanceUID === currentStudyInstanceUID
+                )
+            )
+          ),
+          focusedFinding: null,
           lastAction: `${modelName} viewport result cleared`,
           error: null,
         }));
@@ -1334,6 +1536,7 @@ const getCommandsModule = ({
       aiWorkflowStore.update({
         renderedAnnotationIds: rendered.annotationIds,
         renderedSegmentationId: rendered.segmentationId,
+        focusedFinding: null,
         lastAction: 'Rendered AI result into active viewport',
         error: null,
       });
@@ -1388,6 +1591,97 @@ const getCommandsModule = ({
       }
 
       return true;
+    },
+
+    renderFindingFromSr: async ({
+      findingText,
+      referencedSOPInstanceUID,
+    }: {
+      findingText: string;
+      referencedSOPInstanceUID?: string | null;
+    }) => {
+      const parsedFinding = parseFindingText(findingText, referencedSOPInstanceUID);
+
+      if (!parsedFinding) {
+        return false;
+      }
+
+      const activeViewportReference = getActiveViewportReference();
+      if (!activeViewportReference) {
+        return false;
+      }
+
+      const syntheticResult: InferenceResult = {
+        jobId: `sr-finding-${Date.now()}`,
+        inferenceId: `sr-finding-${Date.now()}`,
+        status: 'completed',
+        modelName: 'yolo',
+        taskType: 'detection',
+        resultFormat: 'dicom-sr',
+        reference: {
+          studyInstanceUID: activeViewportReference.studyInstanceUID,
+          seriesInstanceUID: activeViewportReference.seriesInstanceUID,
+        },
+        payload: {
+          summary: findingText,
+          visualizations: {
+            detections: [parsedFinding.detection],
+          },
+          storage: {
+            mode: 'overlay-only',
+          },
+        },
+        createdAt: getIsoNow(),
+        completedAt: getIsoNow(),
+        error: null,
+      };
+
+      clearRenderedAnnotations(aiWorkflowStore.getState().renderedAnnotationIds);
+      const rendered = await renderInferenceResultToViewport(
+        syntheticResult,
+        servicesManager,
+        commandsManager
+      );
+
+      aiWorkflowStore.update({
+        renderedAnnotationIds: rendered.annotationIds,
+        renderedSegmentationId: null,
+        focusedFinding: parsedFinding.focusedFinding,
+        lastAction: 'SR finding restored on source image',
+        error: null,
+      });
+
+      return true;
+    },
+
+    generatePatientReport: () => {
+      const workflow = aiWorkflowStore.getState();
+      const activeStudyInstanceUID =
+        getActiveViewportReference()?.studyInstanceUID || workflow.studyInstanceUID || null;
+      const reportResults = activeStudyInstanceUID
+        ? workflow.recentResults.filter(
+            result => result.reference.studyInstanceUID === activeStudyInstanceUID
+          )
+        : workflow.recentResults;
+      const patientReportText = buildPatientReport(reportResults);
+
+      if (!patientReportText) {
+        notify(
+          'AI Inference',
+          'No AI result is available for patient report generation',
+          'warning'
+        );
+        return null;
+      }
+
+      aiWorkflowStore.update({
+        patientReportText,
+        lastAction: 'Patient AI report generated',
+        error: null,
+      });
+
+      notify('AI Inference', 'Patient AI report generated', 'success');
+      return patientReportText;
     },
 
     checkBackendHealth: async () => {
@@ -1546,10 +1840,10 @@ const getCommandsModule = ({
             });
 
             aiWorkflowStore.update({
-              lastResult: result,
               lastAction: 'Inference completed',
               error: null,
             });
+            upsertRecentResult(result);
 
             const task = getTaskByInferenceId(result.inferenceId);
             let message = buildCompletionMessage(
@@ -1730,9 +2024,12 @@ const getCommandsModule = ({
             resultReady: result.status === 'completed',
             error: result.error ?? null,
           },
-          lastResult: result.status === 'completed' ? result : workflow.lastResult,
           error: null,
         });
+
+        if (result.status === 'completed') {
+          upsertRecentResult(result);
+        }
 
         if (result.status === 'completed') {
           const task = getTaskByInferenceId(result.inferenceId);
@@ -1853,6 +2150,9 @@ const getCommandsModule = ({
     aiInferenceRefreshDerivedSeries: {
       commandFn: actions.refreshDerivedSeries,
     },
+    aiInferenceRenderFindingFromSr: {
+      commandFn: actions.renderFindingFromSr,
+    },
     aiInferenceCheckBackendHealth: {
       commandFn: actions.checkBackendHealth,
     },
@@ -1861,6 +2161,9 @@ const getCommandsModule = ({
     },
     aiInferenceRunInference: {
       commandFn: actions.runInference,
+    },
+    aiInferenceGeneratePatientReport: {
+      commandFn: actions.generatePatientReport,
     },
     aiInferenceRefreshJob: {
       commandFn: actions.refreshJob,

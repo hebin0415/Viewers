@@ -1,7 +1,0 @@
-{
-  "checkpointloader": {
-    "_target_": "CheckpointLoader",
-    "map_location": "@device",
-    "load_path": "model.pt"
-  }
-}

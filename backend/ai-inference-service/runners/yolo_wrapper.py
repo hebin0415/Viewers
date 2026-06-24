@@ -20,6 +20,11 @@ def _normalize_detection(raw_detection: dict, index: int) -> dict:
         'width': bbox[2],
         'height': bbox[3],
         'sliceIndex': raw_detection.get('sliceIndex'),
+        'anatomicalSite': raw_detection.get('anatomicalSite'),
+        'lesionType': raw_detection.get('lesionType'),
+        'sizeText': raw_detection.get('sizeText'),
+        'assessment': raw_detection.get('assessment'),
+        'annotationText': raw_detection.get('annotationText'),
     }
 
 
@@ -30,7 +35,7 @@ def _adapt_yolo_output(raw_output: dict, _request: dict, _context: dict[str, str
 
     return {
         'status': 'completed',
-        'resultFormat': raw_output.get('resultFormat', 'rtstruct'),
+        'resultFormat': raw_output.get('resultFormat', 'dicom-sr'),
         'payload': {
             'summary': raw_output.get('summary', 'YOLO wrapper completed detection'),
             'artifactUri': raw_output.get('artifactUri'),

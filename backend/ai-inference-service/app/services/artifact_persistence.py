@@ -11,7 +11,7 @@ import pydicom
 
 from app.core.settings import settings
 from app.schemas.api import InferencePayload, InferenceRequest
-from app.services.derived_dicom import create_rtstruct_dataset, create_seg_dataset, create_sr_dataset
+from app.services.derived_dicom import create_seg_dataset, create_sr_dataset
 
 
 @dataclass(frozen=True)
@@ -150,7 +150,7 @@ def _collect_generated_paths(
 
     if request.taskType == 'detection':
         return [
-            create_rtstruct_dataset(
+            create_sr_dataset(
                 inference_id=inference_id,
                 request=request,
                 payload=payload,
